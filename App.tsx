@@ -36,7 +36,7 @@ const HomeView: React.FC<{ clubSettings: ClubSettings; onNavigate: (view: AppVie
         </div>
       </div>
       
-      <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 uppercase">
+      <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 uppercase text-white">
         {firstName} <span className="gold-text">{restName}</span>
       </h1>
       
@@ -47,17 +47,17 @@ const HomeView: React.FC<{ clubSettings: ClubSettings; onNavigate: (view: AppVie
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
         <button onClick={() => onNavigate(AppView.FEED)} className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform"><Bell size={32} /></div>
-          <div><h3 className="text-xl font-bold mb-1">নোটিশ বোর্ড</h3><p className="text-sm text-slate-500">সর্বশেষ আপডেট</p></div>
+          <div><h3 className="text-xl font-bold mb-1 text-white">নোটিশ বোর্ড</h3><p className="text-sm text-slate-500">সর্বশেষ আপডেট দেখুন</p></div>
           <ArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
         </button>
         <button onClick={() => onNavigate(AppView.DIRECTORY)} className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform"><Users size={32} /></div>
-          <div><h3 className="text-xl font-bold mb-1">ডিরেক্টরি</h3><p className="text-sm text-slate-500">সদস্যদের প্রোফাইল</p></div>
+          <div><h3 className="text-xl font-bold mb-1 text-white">ডিরেক্টরি</h3><p className="text-sm text-slate-500">সদস্যদের প্রোফাইল</p></div>
           <ArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
         </button>
         <button onClick={() => onNavigate(AppView.MEDIA)} className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform"><ImageIcon size={32} /></div>
-          <div><h3 className="text-xl font-bold mb-1">গ্যালারি</h3><p className="text-sm text-slate-500">স্মৃতি ও ছবি</p></div>
+          <div><h3 className="text-xl font-bold mb-1 text-white">গ্যালারি</h3><p className="text-sm text-slate-500">স্মৃতি ও ছবি</p></div>
           <ArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
@@ -93,3 +93,14 @@ const App: React.FC = () => {
         const list = Object.keys(data).map(key => ({ ...data[key], id: key }));
         setNotices(list.reverse());
       }
+    });
+    onValue(ref(db, 'media'), (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({ ...data[key], id: key }));
+        setMedia(list.reverse());
+      }
+    });
+    onValue(ref(db, 'settings'), (snapshot) => {
+      const data = snapshot.val();
+      if (data) setClub
