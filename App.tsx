@@ -8,10 +8,11 @@ import { MemberDirectory } from './components/MemberDirectory';
 import { AdminPanel } from './components/AdminPanel';
 import { MediaGallery } from './components/MediaGallery';
 import { ProfileModal } from './components/ProfileModal';
+import { db } from './firebase';
+import { ref, onValue, set, push, remove } from 'firebase/database';
 import { 
   Lock, 
   X, 
-  ShieldAlert, 
   Diamond, 
   ArrowRight, 
   Bell, 
@@ -26,6 +27,10 @@ import {
 } from 'lucide-react';
 
 const HomeView: React.FC<{ clubSettings: ClubSettings; onNavigate: (view: AppView) => void }> = ({ clubSettings, onNavigate }) => {
+  const nameParts = clubSettings.name.split(' ');
+  const firstName = nameParts[0] || 'Elite';
+  const restName = nameParts.slice(1).join(' ') || 'Club';
+
   return (
     <div className="min-h-full flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-700">
       <div className="relative mb-10">
@@ -40,14 +45,14 @@ const HomeView: React.FC<{ clubSettings: ClubSettings; onNavigate: (view: AppVie
       </div>
       
       <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 uppercase">
-        {clubSettings.name.split(' ')[0]} <span className="gold-text">{clubSettings.name.split(' ').slice(1).join(' ')}</span>
+        {firstName} <span className="gold-text">{restName}</span>
       </h1>
       
       <p className="text-xl md:text-2xl text-slate-400 font-medium mb-8 max-w-2xl">
         {clubSettings.tagline}
       </p>
 
-      {/* Social Links On Opening Page */}
+      {/* Social Links */}
       <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-12">
         {clubSettings.facebook && (
           <a href={clubSettings.facebook} target="_blank" rel="noopener noreferrer" className="group flex flex-col items-center gap-2">
@@ -88,45 +93,19 @@ const HomeView: React.FC<{ clubSettings: ClubSettings; onNavigate: (view: AppVie
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
-        <button 
-          onClick={() => onNavigate(AppView.FEED)}
-          className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4"
-        >
-          <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform">
-            <Bell size={32} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold mb-1">Notice Board</h3>
-            <p className="text-sm text-slate-500">View latest club updates</p>
-          </div>
+        <button onClick={() => onNavigate(AppView.FEED)} className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform"><Bell size={32} /></div>
+          <div><h3 className="text-xl font-bold mb-1">Notice Board</h3><p className="text-sm text-slate-500">View latest club updates</p></div>
           <ArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
         </button>
-
-        <button 
-          onClick={() => onNavigate(AppView.DIRECTORY)}
-          className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4"
-        >
-          <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform">
-            <Users size={32} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold mb-1">Directory</h3>
-            <p className="text-sm text-slate-500">Explore member profiles</p>
-          </div>
+        <button onClick={() => onNavigate(AppView.DIRECTORY)} className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform"><Users size={32} /></div>
+          <div><h3 className="text-xl font-bold mb-1">Directory</h3><p className="text-sm text-slate-500">Explore member profiles</p></div>
           <ArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
         </button>
-
-        <button 
-          onClick={() => onNavigate(AppView.MEDIA)}
-          className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4 sm:col-span-2 lg:col-span-1"
-        >
-          <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform">
-            <ImageIcon size={32} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold mb-1">Gallery</h3>
-            <p className="text-sm text-slate-500">Memories & Highlights</p>
-          </div>
+        <button onClick={() => onNavigate(AppView.MEDIA)} className="glass group p-8 rounded-3xl border border-white/5 hover:border-yellow-500/30 transition-all flex flex-col items-center gap-4 sm:col-span-2 lg:col-span-1">
+          <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-yellow-500 group-hover:scale-110 transition-transform"><ImageIcon size={32} /></div>
+          <div><h3 className="text-xl font-bold mb-1">Gallery</h3><p className="text-sm text-slate-500">Memories & Highlights</p></div>
           <ArrowRight className="text-slate-600 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
@@ -141,44 +120,65 @@ const App: React.FC = () => {
   const [passwordInput, setPasswordInput] = React.useState('');
   const [loginError, setLoginError] = React.useState(false);
 
-  // Persistent State with Fallbacks
-  const [clubSettings, setClubSettings] = React.useState<ClubSettings>(() => {
-    try {
-      const saved = localStorage.getItem('elite_club_settings');
-      return saved ? JSON.parse(saved) : INITIAL_CLUB_SETTINGS;
-    } catch { return INITIAL_CLUB_SETTINGS; }
-  });
-
-  const [members, setMembers] = React.useState<Member[]>(() => {
-    try {
-      const saved = localStorage.getItem('elite_members');
-      return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
-    } catch { return INITIAL_MEMBERS; }
-  });
-
-  const [notices, setNotices] = React.useState<Notice[]>(() => {
-    try {
-      const saved = localStorage.getItem('elite_notices');
-      return saved ? JSON.parse(saved) : INITIAL_NOTICES;
-    } catch { return INITIAL_NOTICES; }
-  });
-
-  const [media, setMedia] = React.useState<MediaItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('elite_media');
-      return saved ? JSON.parse(saved) : INITIAL_MEDIA;
-    } catch { return INITIAL_MEDIA; }
-  });
-
+  // Cloud State
+  const [clubSettings, setClubSettings] = React.useState<ClubSettings>(INITIAL_CLUB_SETTINGS);
+  const [members, setMembers] = React.useState<Member[]>([]);
+  const [notices, setNotices] = React.useState<Notice[]>([]);
+  const [media, setMedia] = React.useState<MediaItem[]>([]);
   const [selectedMember, setSelectedMember] = React.useState<Member | null>(null);
 
-  // Sync with LocalStorage on every change
-  React.useEffect(() => { localStorage.setItem('elite_club_settings', JSON.stringify(clubSettings)); }, [clubSettings]);
-  React.useEffect(() => { localStorage.setItem('elite_members', JSON.stringify(members)); }, [members]);
-  React.useEffect(() => { localStorage.setItem('elite_notices', JSON.stringify(notices)); }, [notices]);
-  React.useEffect(() => { localStorage.setItem('elite_media', JSON.stringify(media)); }, [media]);
+  // Synchronize with Firebase Realtime Database
+  React.useEffect(() => {
+    // 1. Members Synchronization
+    const membersRef = ref(db, 'members');
+    onValue(membersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({ ...data[key], id: key }));
+        setMembers(list);
+      } else {
+        // Initial Seed
+        INITIAL_MEMBERS.forEach(m => push(ref(db, 'members'), m));
+      }
+    });
 
-  // Admin Login Logic
+    // 2. Notices Synchronization (Newest First)
+    const noticesRef = ref(db, 'notices');
+    onValue(noticesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({ ...data[key], id: key }));
+        setNotices(list.reverse());
+      } else {
+        INITIAL_NOTICES.forEach(n => push(ref(db, 'notices'), n));
+      }
+    });
+
+    // 3. Media Synchronization (Newest First)
+    const mediaRef = ref(db, 'media');
+    onValue(mediaRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({ ...data[key], id: key }));
+        setMedia(list.reverse());
+      } else {
+        INITIAL_MEDIA.forEach(m => push(ref(db, 'media'), m));
+      }
+    });
+
+    // 4. Club Settings Synchronization
+    const settingsRef = ref(db, 'settings');
+    onValue(settingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setClubSettings(data);
+      } else {
+        set(ref(db, 'settings'), INITIAL_CLUB_SETTINGS);
+      }
+    });
+  }, []);
+
+  // Admin Security Logic
   const handleAdminToggle = () => {
     if (isAdmin) {
       setIsAdmin(false);
@@ -195,82 +195,104 @@ const App: React.FC = () => {
     if (passwordInput === '1122') {
       setIsAdmin(true);
       setIsLoginModalOpen(false);
-      setLoginError(false);
     } else {
       setLoginError(true);
       setPasswordInput('');
     }
   };
 
-  // Handlers
+  // Cloud Write Handlers (Admin Only)
   const handleAddMember = (memberData: Omit<Member, 'id'>) => {
     if (!isAdmin) return;
-    const newMember = { ...memberData, id: Math.random().toString(36).substr(2, 9) };
-    setMembers([newMember, ...members]);
+    push(ref(db, 'members'), memberData);
   };
 
   const handleEditMember = (updatedMember: Member) => {
     if (!isAdmin) return;
-    setMembers(members.map(m => m.id === updatedMember.id ? updatedMember : m));
+    const { id, ...data } = updatedMember;
+    set(ref(db, `members/${id}`), data);
   };
 
   const handleDeleteMember = (id: string) => {
     if (!isAdmin) return;
-    if (confirm('Are you sure you want to remove this member?')) {
-      setMembers(members.filter(m => m.id !== id));
+    if (confirm('Permanently delete this record from the cloud?')) {
+      remove(ref(db, `members/${id}`));
     }
   };
 
   const handlePostNotice = (noticeData: Partial<Notice>) => {
     if (!isAdmin) return;
-    const newNotice: Notice = {
-      id: 'n' + Date.now(),
-      title: noticeData.title || 'No Title',
+    push(ref(db, 'notices'), {
+      title: noticeData.title || 'Untitled Update',
       content: noticeData.content || '',
       date: new Date().toISOString().split('T')[0],
-      author: 'Administrator',
-      priority: 'medium'
-    };
-    setNotices([newNotice, ...notices]);
+      author: 'Admin',
+      priority: noticeData.priority || 'medium'
+    });
   };
 
   const handleAddMedia = (mediaData: Partial<MediaItem>) => {
     if (!isAdmin) return;
-    const newItem: MediaItem = {
-      id: 'm' + Date.now(),
+    push(ref(db, 'media'), {
       url: mediaData.url || '',
-      caption: mediaData.caption || '',
+      caption: mediaData.caption || 'No caption',
       type: mediaData.type || 'image',
       date: new Date().toISOString().split('T')[0]
-    };
-    setMedia([newItem, ...media]);
+    });
   };
 
   const handleDeleteMedia = (id: string) => {
     if (!isAdmin) return;
-    if (confirm('Delete this memory?')) {
-      setMedia(media.filter(m => m.id !== id));
+    if (confirm('Remove this item from the public gallery?')) {
+      remove(ref(db, `media/${id}`));
     }
   };
 
   const handleUpdateClubSettings = (newSettings: ClubSettings) => {
     if (!isAdmin) return;
-    setClubSettings(newSettings);
+    set(ref(db, 'settings'), newSettings);
   };
 
   const handleRestoreData = (data: { members: Member[], notices: Notice[], media: MediaItem[], settings: ClubSettings }) => {
-    setMembers(data.members);
-    setNotices(data.notices);
-    setMedia(data.media);
-    setClubSettings(data.settings);
+    if (!isAdmin) return;
+    // Overwrite cloud collection
+    set(ref(db, 'settings'), data.settings);
+    
+    // Clear and re-populate members
+    remove(ref(db, 'members')).then(() => {
+      data.members.forEach(m => {
+        const { id, ...rest } = m;
+        push(ref(db, 'members'), rest);
+      });
+    });
+
+    // Clear and re-populate notices
+    remove(ref(db, 'notices')).then(() => {
+      data.notices.forEach(n => {
+        const { id, ...rest } = n;
+        push(ref(db, 'notices'), rest);
+      });
+    });
+
+    // Clear and re-populate media
+    remove(ref(db, 'media')).then(() => {
+      data.media.forEach(m => {
+        const { id, ...rest } = m;
+        push(ref(db, 'media'), rest);
+      });
+    });
+    
+    alert('Cloud synchronization complete. New data is live for all members.');
   };
 
   const handleResetData = () => {
-    setMembers(INITIAL_MEMBERS);
-    setNotices(INITIAL_NOTICES);
-    setMedia(INITIAL_MEDIA);
-    setClubSettings(INITIAL_CLUB_SETTINGS);
-    localStorage.clear();
+    if (!isAdmin) return;
+    if (confirm('DANGER: This will wipe the ENTIRE cloud database. Continue?')) {
+      remove(ref(db, '/')).then(() => {
+        alert('Cloud Wiped. Refreshing for initial seed.');
+        window.location.reload();
+      });
+    }
   };
 
   const renderView = () => {
@@ -284,7 +306,7 @@ const App: React.FC = () => {
       case AppView.MEDIA:
         return <MediaGallery media={media} isAdmin={isAdmin} onAddMedia={handleAddMedia} onDeleteMedia={handleDeleteMedia} />;
       case AppView.ADMIN:
-        return isAdmin ? (
+        return (
           <div className="p-4 md:p-8">
             <AdminPanel 
               members={members} 
@@ -298,13 +320,6 @@ const App: React.FC = () => {
               onRestoreData={handleRestoreData}
               onResetData={handleResetData}
             />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-slate-600 gap-4">
-            <ShieldAlert size={64} className="opacity-20 text-yellow-500" />
-            <p className="text-xl font-bold text-slate-300">Restricted Access Module</p>
-            <p className="text-sm max-w-xs text-center text-slate-500">Only certified administrators can access the configuration console.</p>
-            <button onClick={handleAdminToggle} className="mt-4 gold-bg text-slate-950 px-6 py-2 rounded-xl font-bold hover:brightness-110">Authenticate Now</button>
           </div>
         );
       default:
@@ -324,7 +339,7 @@ const App: React.FC = () => {
         {renderView()}
       </Layout>
 
-      {/* Login Modal */}
+      {/* Security Login Modal */}
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setIsLoginModalOpen(false)} />
@@ -332,8 +347,8 @@ const App: React.FC = () => {
             <button onClick={() => setIsLoginModalOpen(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={20} /></button>
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-16 h-16 rounded-full glass-gold flex items-center justify-center text-yellow-500"><Lock size={32} /></div>
-              <h2 className="text-2xl font-bold tracking-tight">Admin Authentication</h2>
-              <p className="text-slate-400 text-sm">Please provide the security key to gain administrative privileges.</p>
+              <h2 className="text-2xl font-bold tracking-tight">Cloud Authentication</h2>
+              <p className="text-slate-400 text-sm">Please verify identity to unlock administrative controls.</p>
               <form onSubmit={attemptLogin} className="w-full space-y-4 pt-4">
                 <input 
                   type="password" 
@@ -343,8 +358,8 @@ const App: React.FC = () => {
                   autoFocus
                   className={`w-full bg-slate-900 border ${loginError ? 'border-red-500/50' : 'border-white/10'} rounded-xl px-4 py-3 outline-none text-center text-xl tracking-widest focus:border-yellow-500/50 transition-all`}
                 />
-                {loginError && <p className="text-xs text-red-500 font-medium">Invalid credentials. Access denied.</p>}
-                <button type="submit" className="w-full gold-bg text-slate-950 py-3 rounded-xl font-bold shadow-lg shadow-yellow-500/10 hover:brightness-110 transition-all active:scale-95">Verify Access</button>
+                {loginError && <p className="text-xs text-red-500 font-medium">Authentication failed.</p>}
+                <button type="submit" className="w-full gold-bg text-slate-950 py-3 rounded-xl font-bold shadow-lg shadow-yellow-500/10 hover:brightness-110 transition-all active:scale-95">Verify & Unlock</button>
               </form>
             </div>
           </div>
