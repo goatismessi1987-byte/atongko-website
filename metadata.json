@@ -1,0 +1,7 @@
+{
+  "name": "EliteClub - Member Management System",
+  "description": "A high-end, private social network style management system for exclusive clubs. Features include member profiles, admin dashboards, and a central notice board with a premium glassmorphic aesthetic.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
