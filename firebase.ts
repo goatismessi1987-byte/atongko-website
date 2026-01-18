@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // আপনার অরিজিনাল কি এখানে দিন
+  apiKey: "YOUR_API_KEY", // আপনার অরিজিনাল Firebase API Key এখানে দিন
   authDomain: "atongko-website.firebaseapp.com",
   projectId: "atongko-website",
   storageBucket: "atongko-website.appspot.com",
