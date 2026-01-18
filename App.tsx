@@ -3,7 +3,7 @@ import { Member, AppView } from './types';
 import { AdminPanel } from './components/AdminPanel';
 import { MemberDirectory } from './components/MemberDirectory';
 import { db, storage } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, updateDoc, deleteDoc, doc, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 function App() {
@@ -18,18 +18,6 @@ function App() {
     return () => unsub();
   }, []);
 
-  const handleAddMember = async (member: Omit<Member, 'id'>, file?: File) => {
-    try {
-      let photoUrl = 'https://via.placeholder.com/150';
-      if (file) {
-        const storageRef = ref(storage, `members/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        photoUrl = await getDownloadURL(storageRef);
-      }
-      await addDoc(collection(db, 'members'), { ...member, photoUrl });
-    } catch (e) { console.error(e); }
-  };
-
   const handleEditMember = async (member: Member, file?: File) => {
     try {
       let photoUrl = member.photoUrl;
@@ -38,38 +26,30 @@ function App() {
         await uploadBytes(storageRef, file);
         photoUrl = await getDownloadURL(storageRef);
       }
+      const memberRef = doc(db, 'members', member.id);
       const { id, ...data } = member;
-      await updateDoc(doc(db, 'members', id), { ...data, photoUrl });
-      alert("Updated successfully!");
-    } catch (e) { console.error(e); }
+      await updateDoc(memberRef, { ...data, photoUrl });
+      alert("সফলভাবে আপডেট হয়েছে!");
+    } catch (e) { alert("আপডেট ব্যর্থ হয়েছে!"); }
   };
 
   const handleDeleteMember = async (id: string) => {
-    if (window.confirm("Delete this member?")) {
+    if (window.confirm("আপনি কি এই মেম্বারকে ডিলিট করতে চান?")) {
       await deleteDoc(doc(db, 'members', id));
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0c12] text-white font-sans">
-      <nav className="p-4 border-b border-white/10 flex gap-4 bg-[#11141d] sticky top-0 z-50">
-        <button onClick={() => setView(AppView.DIRECTORY)} className={`px-5 py-2 rounded-xl font-bold transition-all ${view === AppView.DIRECTORY ? 'bg-yellow-500 text-black' : 'hover:bg-white/5'}`}>Directory</button>
-        <button onClick={() => setView(AppView.ADMIN)} className={`px-5 py-2 rounded-xl font-bold transition-all ${view === AppView.ADMIN ? 'bg-yellow-500 text-black' : 'hover:bg-white/5'}`}>Admin</button>
+    <div className="min-h-screen bg-[#0a0c12] text-white">
+      <nav className="p-4 border-b border-white/10 flex gap-4 bg-[#11141d]">
+        <button onClick={() => setView(AppView.DIRECTORY)} className={`px-4 py-2 rounded-xl font-bold ${view === AppView.DIRECTORY ? 'bg-yellow-500 text-black' : 'bg-white/5'}`}>Directory</button>
+        <button onClick={() => setView(AppView.ADMIN)} className={`px-4 py-2 rounded-xl font-bold ${view === AppView.ADMIN ? 'bg-yellow-500 text-black' : 'bg-white/5'}`}>Admin Settings</button>
       </nav>
-      <main className="container mx-auto py-8">
-        {view === AppView.DIRECTORY ? (
-          <MemberDirectory members={members} />
-        ) : (
-          <AdminPanel 
-            members={members} 
-            onAddMember={handleAddMember}
-            onEditMember={handleEditMember}
-            onDeleteMember={handleDeleteMember}
-          />
-        )}
+      <main className="container mx-auto py-6">
+        {view === AppView.DIRECTORY ? <MemberDirectory members={members} /> : 
+        <AdminPanel members={members} onEditMember={handleEditMember} onDeleteMember={handleDeleteMember} />}
       </main>
     </div>
   );
 }
-
 export default App;
