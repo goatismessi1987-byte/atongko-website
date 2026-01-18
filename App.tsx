@@ -3,7 +3,7 @@ import { Member, AppView } from './types';
 import { AdminPanel } from './components/AdminPanel';
 import { MemberDirectory } from './components/MemberDirectory';
 import { db, storage } from './firebase';
-import { collection, onSnapshot, updateDoc, deleteDoc, doc, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 function App() {
@@ -11,8 +11,12 @@ function App() {
   const [view, setView] = useState<AppView>(AppView.DIRECTORY);
 
   useEffect(() => {
+    // ডাটাবেস থেকে রিয়েল-টাইম মেম্বার ডাটা আনা
     const unsub = onSnapshot(collection(db, 'members'), (snapshot) => {
-      const memberData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Member));
+      const memberData = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Member));
       setMembers(memberData);
     });
     return () => unsub();
@@ -29,12 +33,12 @@ function App() {
       const memberRef = doc(db, 'members', member.id);
       const { id, ...data } = member;
       await updateDoc(memberRef, { ...data, photoUrl });
-      alert("সফলভাবে আপডেট হয়েছে!");
-    } catch (e) { alert("আপডেট ব্যর্থ হয়েছে!"); }
+      alert("Updated Successfully!");
+    } catch (e) { console.error(e); }
   };
 
   const handleDeleteMember = async (id: string) => {
-    if (window.confirm("আপনি কি এই মেম্বারকে ডিলিট করতে চান?")) {
+    if (window.confirm("Delete this member?")) {
       await deleteDoc(doc(db, 'members', id));
     }
   };
@@ -46,8 +50,15 @@ function App() {
         <button onClick={() => setView(AppView.ADMIN)} className={`px-4 py-2 rounded-xl font-bold ${view === AppView.ADMIN ? 'bg-yellow-500 text-black' : 'bg-white/5'}`}>Admin Settings</button>
       </nav>
       <main className="container mx-auto py-6">
-        {view === AppView.DIRECTORY ? <MemberDirectory members={members} /> : 
-        <AdminPanel members={members} onEditMember={handleEditMember} onDeleteMember={handleDeleteMember} />}
+        {view === AppView.DIRECTORY ? (
+          <MemberDirectory members={members} />
+        ) : (
+          <AdminPanel 
+            members={members} 
+            onEditMember={handleEditMember} 
+            onDeleteMember={handleDeleteMember} 
+          />
+        )}
       </main>
     </div>
   );
