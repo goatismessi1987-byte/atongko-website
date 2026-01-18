@@ -1,17 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage'; // এটি যোগ করা হয়েছে
+import { getStorage } from 'firebase/storage';
 
-// আপনার ফায়ারবেস কনফিগারেশন (এটি আপনার নিজেরটা ব্যবহার করবেন)
+// আপনার নিজের Firebase Config এখানে ব্যবহার করুন
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
-  authDomain: "atongko-group-website.firebaseapp.com",
-  projectId: "atongko-group-website",
-  storageBucket: "atongko-group-website.firebasestorage.app", // এটি গুরুত্বপূর্ণ
-  messagingSenderId: "YOUR_ID",
+  authDomain: "atongko-website.firebaseapp.com",
+  projectId: "atongko-website",
+  storageBucket: "atongko-website.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
   appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const storage = getStorage(app); // এটি export করা হয়েছে
+export const storage = getStorage(app); // এটি অবশ্যই থাকতে হবে
