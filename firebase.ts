@@ -1,22 +1,17 @@
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage'; // এটি যোগ করা হয়েছে
 
-import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
-
-/**
- * FIREBASE CONFIGURATION:
- * The databaseURL has been updated as per your request.
- * Please ensure the other fields (apiKey, projectId, etc.) are filled 
- * with values from your Firebase Console for full functionality.
- */
+// আপনার ফায়ারবেস কনফিগারেশন (এটি আপনার নিজেরটা ব্যবহার করবেন)
 const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "atongko-web.firebaseapp.com",
-  databaseURL: "https://atongko-web-default-rtdb.firebaseio.com",
-  projectId: "atongko-web",
-  storageBucket: "atongko-web.appspot.com",
-  messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "atongko-group-website.firebaseapp.com",
+  projectId: "atongko-group-website",
+  storageBucket: "atongko-group-website.firebasestorage.app", // এটি গুরুত্বপূর্ণ
+  messagingSenderId: "YOUR_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app); // এটি export করা হয়েছে
