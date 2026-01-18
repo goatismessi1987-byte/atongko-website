@@ -2,8 +2,9 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+// আপনার অরিজিনাল ফায়ারবেস কি-গুলো এখানে বসাবেন
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // আপনার অরিজিনাল Firebase API Key এখানে দিন
+  apiKey: "YOUR_API_KEY", 
   authDomain: "atongko-website.firebaseapp.com",
   projectId: "atongko-website",
   storageBucket: "atongko-website.appspot.com",
@@ -12,5 +13,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+export { db, storage }; // এই এক্সপোর্টটি নিশ্চিত করুন
