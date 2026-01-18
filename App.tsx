@@ -40,31 +40,36 @@ function App() {
       }
       const { id, ...data } = member;
       await updateDoc(doc(db, 'members', id), { ...data, photoUrl });
+      alert("Updated successfully!");
     } catch (e) { console.error(e); }
   };
 
-  const handleAddGalleryImage = async (file: File) => {
-    try {
-      const storageRef = ref(storage, `gallery/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      await addDoc(collection(db, 'gallery'), { url, createdAt: new Date().toISOString() });
-      alert("Gallery image uploaded!");
-    } catch (e) { alert("Upload failed!"); }
+  const handleDeleteMember = async (id: string) => {
+    if (window.confirm("Delete this member?")) {
+      await deleteDoc(doc(db, 'members', id));
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0c12] text-white">
-      <nav className="p-4 border-b border-white/10 flex gap-4 bg-[#11141d]">
-        <button onClick={() => setView(AppView.DIRECTORY)} className={`px-4 py-2 rounded-xl font-bold ${view === AppView.DIRECTORY ? 'bg-yellow-500 text-black' : 'bg-white/5'}`}>Directory</button>
-        <button onClick={() => setView(AppView.ADMIN)} className={`px-4 py-2 rounded-xl font-bold ${view === AppView.ADMIN ? 'bg-yellow-500 text-black' : 'bg-white/5'}`}>Admin Settings</button>
+    <div className="min-h-screen bg-[#0a0c12] text-white font-sans">
+      <nav className="p-4 border-b border-white/10 flex gap-4 bg-[#11141d] sticky top-0 z-50">
+        <button onClick={() => setView(AppView.DIRECTORY)} className={`px-5 py-2 rounded-xl font-bold transition-all ${view === AppView.DIRECTORY ? 'bg-yellow-500 text-black' : 'hover:bg-white/5'}`}>Directory</button>
+        <button onClick={() => setView(AppView.ADMIN)} className={`px-5 py-2 rounded-xl font-bold transition-all ${view === AppView.ADMIN ? 'bg-yellow-500 text-black' : 'hover:bg-white/5'}`}>Admin</button>
       </nav>
-      <main className="container mx-auto py-6">
-        {view === AppView.DIRECTORY ? <MemberDirectory members={members} /> : 
-        <AdminPanel members={members} onAddMember={handleAddMember} onEditMember={handleEditMember} 
-        onDeleteMember={(id:string) => deleteDoc(doc(db, 'members', id))} onAddGalleryImage={handleAddGalleryImage} />}
+      <main className="container mx-auto py-8">
+        {view === AppView.DIRECTORY ? (
+          <MemberDirectory members={members} />
+        ) : (
+          <AdminPanel 
+            members={members} 
+            onAddMember={handleAddMember}
+            onEditMember={handleEditMember}
+            onDeleteMember={handleDeleteMember}
+          />
+        )}
       </main>
     </div>
   );
 }
+
 export default App;
